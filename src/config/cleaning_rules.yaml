@@ -1,0 +1,51 @@
+# WF-005 历史数据清洗规则配置
+
+# 去重规则
+deduplication:
+  method: "issue_id"
+  keep: "latest"
+
+# 字段规范化
+field_normalization:
+  title:
+    max_length: 256
+    trim: true
+  state:
+    valid_values: ["open", "closed"]
+    default: "open"
+  labels:
+    format: "json_array"
+
+# Labels标准化映射
+label_mapping:
+  "bug": "kind/bug"
+  "feature": "kind/feature"
+  "enhancement": "kind/feature"
+  "question": "kind/question"
+  "task": "kind/task"
+
+# 废弃标签（清洗时移除）
+deprecated_labels:
+  - "wontfix"
+  - "invalid"
+  - "duplicate"
+
+# 缺失值处理
+missing_values:
+  assignee:
+    action: "keep_null"
+  priority:
+    action: "ai_infer"
+  milestone:
+    action: "keep_null"
+
+# 质量检查
+quality:
+  required_fields: ["title", "state"]
+  min_quality_score: 0.7
+  label_prefixes: ["kind/", "area/", "customer/", "severity/", "project/"]
+
+# AI批量处理
+ai:
+  batch_size: 50
+  retry_on_failure: true

@@ -13,6 +13,16 @@ from urllib.parse import quote_plus
 # 获取项目根目录
 BASE_DIR = Path(__file__).parent.parent
 
+# 加载 .env 文件（如果存在）
+_env_file = BASE_DIR / ".env"
+if _env_file.exists():
+    with open(_env_file) as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key, _, value = line.partition("=")
+                os.environ.setdefault(key.strip(), value.strip())
+
 # ==================== GitHub API 配置 ====================
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
 # 如果上面的环境变量没有设置，可以在这里直接填写

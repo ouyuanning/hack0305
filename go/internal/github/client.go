@@ -61,23 +61,41 @@ type Comment struct {
 }
 
 func (c *Client) FetchIssues(ctx context.Context, owner, repo, state string, since *time.Time, page, perPage int) ([]Issue, int, error) {
-	url := fmt.Sprintf("%s/repos/%s/%s/issues?state=%s&page=%d&per_page=%d", c.baseURL, owner, repo, state, page, perPage)
-	if since != nil {
-		url += "&since=" + since.UTC().Format(time.RFC3339)
-	}
-	var issues []Issue
-	rawCount, err := c.do(ctx, url, &issues)
-	if err != nil {
-		return nil, 0, err
-	}
-	filtered := make([]Issue, 0, len(issues))
-	for _, it := range issues {
-		if it.PullRequest != nil {
-			continue
+	// GitHub does not support page-based pagination for large repos.
+	// We use since-cursor pagination: fetch all pages using updated_at as cursor.
+	var all []Issue
+	cursor := since
+	for {
+		url := fmt.Sprintf("%s/repos/%s/%s/issues?state=%s&per_page=%d&direction=asc&sort=updated", c.baseURL, owner, repo, state, perPage)
+		if cursor != nil {
+			url += "&since=" + cursor.UTC().Format(time.RFC3339)
 		}
-		filtered = append(filtered, it)
+		var batch []Issue
+		_, err := c.do(ctx, url, &batch)
+		if err != nil {
+			return nil, 0, err
+		}
+		// Filter out pull requests
+		for _, it := range batch {
+			if it.PullRequest != nil {
+				continue
+			}
+			all = append(all, it)
+		}
+		if len(batch) < perPage {
+			break
+		}
+		// Advance cursor to the updated_at of the last item in the raw batch
+		last := batch[len(batch)-1]
+		if t, err := time.Parse(time.RFC3339, last.UpdatedAt); err == nil {
+			// Add 1 second to avoid re-fetching the last item
+			next := t.Add(time.Second)
+			cursor = &next
+		} else {
+			break
+		}
 	}
-	return filtered, rawCount, nil
+	return all, len(all), nil
 }
 
 func (c *Client) FetchComments(ctx context.Context, owner, repo string, number int) ([]Comment, error) {

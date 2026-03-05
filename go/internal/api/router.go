@@ -6,16 +6,18 @@ import (
 	"github.com/matrixorigin/issue-manager/internal/github"
 	"github.com/matrixorigin/issue-manager/internal/llm"
 	"github.com/matrixorigin/issue-manager/internal/storage"
+	"github.com/matrixorigin/issue-manager/internal/workflow"
 )
 
 // Server holds the dependencies shared across all API handlers.
 type Server struct {
-	Store     *storage.VolumeStore
-	Analyzer  *analysis.Generator
-	GitHub    *github.Client
-	LLM       *llm.Client
-	Repos     []RepoInfo // configured repositories
-	Workflows *WorkflowManager
+	Store       *storage.VolumeStore
+	Analyzer    *analysis.Generator
+	GitHub      *github.Client
+	LLM         *llm.Client
+	Repos       []RepoInfo // configured repositories
+	Workflows   *WorkflowManager
+	WorkflowEnv *workflow.Env
 }
 
 // RegisterRoutes sets up all API routes under /api/v1/.

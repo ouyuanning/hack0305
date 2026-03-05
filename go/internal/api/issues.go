@@ -76,12 +76,8 @@ func (s *Server) handleListIssues(c *gin.Context) {
 	// --- load snapshots ---
 	snapshots, err := s.Analyzer.LoadLatestSnapshots(c.Request.Context(), repoOwner, repoName)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{
-			Code:    http.StatusInternalServerError,
-			Message: "failed to load issues",
-			Detail:  err.Error(),
-		})
-		return
+		// No data synced yet — return empty list instead of 500
+		snapshots = []issue.Snapshot{}
 	}
 
 	// --- filter ---
@@ -316,10 +312,10 @@ func (s *Server) handleGetIssue(c *gin.Context) {
 	// Load bundle (snapshots + relations)
 	bundle, err := s.Analyzer.LoadLatestBundle(c.Request.Context(), repoOwner, repoName)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{
-			Code:    http.StatusInternalServerError,
-			Message: "failed to load issue data",
-			Detail:  err.Error(),
+		c.JSON(http.StatusNotFound, ErrorResponse{
+			Code:    http.StatusNotFound,
+			Message: "no issue data available",
+			Detail:  "run WF-001 to sync issue data first",
 		})
 		return
 	}

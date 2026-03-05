@@ -1,0 +1,33 @@
+moi:
+  base_url: "http://localhost:8081"
+  api_key: "${MOI_API_KEY}"
+  workspace_id: "a0cd2058-82ff-d0a1-22e7-9c18a88946b7"
+  database_id: 1
+  volume_name: "issue-data"
+
+github:
+  token: "${GITHUB_TOKEN}"
+  base_url: "https://api.github.com"
+
+llm:
+  model: "qwen-plus"
+
+storage:
+  base_path: "repos"
+
+report:
+  mirror_local: true
+  mirror_path: "data/reports"
+
+smtp:
+  host: "smtp.163.com"
+  port: 465
+  user: "${SMTP_USER}"
+  password: "${SMTP_PASSWORD}"
+  from: "${SMTP_USER}"
+  from_name: "GitHub Issue 智能管理系统"
+  default_to: "${SMTP_DEFAULT_TO}"
+
+browser:
+  cdp_enabled: false
+  cdp_url: "http://127.0.0.1:9222"

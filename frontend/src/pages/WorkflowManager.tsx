@@ -3,6 +3,7 @@ import {
   Card,
   Badge,
   Button,
+  DatePicker,
   Form,
   Input,
   Switch,
@@ -64,7 +65,16 @@ function WorkflowCard({
 
   const handleSubmit = async () => {
     try {
-      const values = await form.validateFields();
+      const raw = await form.validateFields();
+      // Convert dayjs datetime values to ISO strings for the API
+      const values: Record<string, unknown> = {};
+      for (const [key, val] of Object.entries(raw)) {
+        if (val && typeof val === 'object' && typeof (val as { toISOString?: unknown }).toISOString === 'function') {
+          values[key] = (val as { toISOString: () => string }).toISOString();
+        } else {
+          values[key] = val;
+        }
+      }
       await onTrigger(workflow.id, values);
     } catch {
       // validation error — antd shows inline messages
@@ -120,7 +130,7 @@ function WorkflowCard({
                 key={param.name}
                 name={param.name}
                 label={param.label}
-                initialValue={param.default_value ?? (param.type === 'boolean' ? false : '')}
+                initialValue={param.default_value ?? (param.type === 'boolean' ? false : param.type === 'datetime' ? null : '')}
                 rules={
                   param.required
                     ? [{ required: true, message: `${param.label} 不能为空` }]
@@ -130,6 +140,12 @@ function WorkflowCard({
               >
                 {param.type === 'boolean' ? (
                   <Switch />
+                ) : param.type === 'datetime' ? (
+                  <DatePicker
+                    showTime
+                    style={{ width: '100%' }}
+                    placeholder={`请选择 ${param.label}`}
+                  />
                 ) : (
                   <Input placeholder={`请输入 ${param.label}`} />
                 )}

@@ -78,7 +78,7 @@ export interface WorkflowParam {
   name: string;
   label: string;
   required: boolean;
-  type: 'string' | 'boolean';
+  type: 'string' | 'boolean' | 'datetime';
   default_value?: string;
 }
 

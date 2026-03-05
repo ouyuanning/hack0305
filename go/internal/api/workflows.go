@@ -1,13 +1,16 @@
 package api
 
 import (
+	"context"
 	"crypto/rand"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/matrixflow/moi-core/model/mowl"
 )
 
 // WorkflowDef describes a workflow definition shown in the list endpoint.
@@ -48,7 +51,7 @@ var workflowRegistry = []WorkflowDef{
 			{Name: "repo_owner", Label: "仓库所有者", Required: true, Type: "string"},
 			{Name: "repo_name", Label: "仓库名称", Required: true, Type: "string"},
 			{Name: "full_sync", Label: "全量同步", Required: false, Type: "boolean", DefaultValue: "false"},
-			{Name: "since", Label: "起始时间", Required: false, Type: "string"},
+			{Name: "since", Label: "起始时间", Required: false, Type: "datetime"},
 		},
 	},
 	{
@@ -306,14 +309,128 @@ func (s *Server) handleWorkflowStatus(c *gin.Context) {
 func (s *Server) executeWorkflow(execID, wfID string, req TriggerWorkflowRequest) {
 	s.Workflows.markRunning(execID)
 
-	// Simulate workflow execution with a brief delay.
-	// In a real implementation, this would call the actual workflow engine.
-	time.Sleep(100 * time.Millisecond)
+	ctx := context.Background()
+	var err error
+	var result map[string]any
 
-	result := map[string]any{
-		"workflow_id": wfID,
-		"repo":        req.RepoOwner + "/" + req.RepoName,
-		"message":     "workflow executed successfully",
+	if s.WorkflowEnv == nil {
+		s.Workflows.markFailed(execID, "workflow engine not initialized")
+		return
+	}
+
+	switch wfID {
+	case "WF-001":
+		result, err = s.runWF001(ctx, req)
+	case "WF-002":
+		result, err = s.runWF002(ctx, req)
+	case "WF-005":
+		result, err = s.runWF005(ctx, req)
+	case "WF-006":
+		result, err = s.runWF006(ctx, req)
+	case "WF-007":
+		result, err = s.runWF007(ctx, req)
+	default:
+		err = fmt.Errorf("workflow %s not yet implemented for direct execution", wfID)
+	}
+
+	if err != nil {
+		s.Workflows.markFailed(execID, err.Error())
+		return
 	}
 	s.Workflows.markCompleted(execID, result)
+}
+
+// msgFrom encodes v as a MowlMessage.
+func msgFrom(v any) (*mowl.MowlMessage, error) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	return &mowl.MowlMessage{Data: string(data)}, nil
+}
+
+// runWF001 runs: collect → parse → relations → store
+func (s *Server) runWF001(ctx context.Context, req TriggerWorkflowRequest) (map[string]any, error) {
+	in := map[string]any{
+		"repo_owner": req.RepoOwner,
+		"repo_name":  req.RepoName,
+		"full_sync":  req.FullSync,
+		"since":      req.Since,
+	}
+	msg, err := msgFrom(in)
+	if err != nil {
+		return nil, err
+	}
+	msg, err = s.WorkflowEnv.HandleCollect(ctx, msg)
+	if err != nil {
+		return nil, fmt.Errorf("collect: %w", err)
+	}
+	msg, err = s.WorkflowEnv.HandleParse(ctx, msg)
+	if err != nil {
+		return nil, fmt.Errorf("parse: %w", err)
+	}
+	msg, err = s.WorkflowEnv.HandleRelations(ctx, msg)
+	if err != nil {
+		return nil, fmt.Errorf("relations: %w", err)
+	}
+	msg, err = s.WorkflowEnv.HandleStore(ctx, msg)
+	if err != nil {
+		return nil, fmt.Errorf("store: %w", err)
+	}
+	var out map[string]any
+	_ = json.Unmarshal([]byte(msg.Data), &out)
+	return out, nil
+}
+
+// runWF002 runs: knowledge.build
+func (s *Server) runWF002(ctx context.Context, req TriggerWorkflowRequest) (map[string]any, error) {
+	in := map[string]any{"repo_owner": req.RepoOwner, "repo_name": req.RepoName}
+	msg, err := msgFrom(in)
+	if err != nil {
+		return nil, err
+	}
+	msg, err = s.WorkflowEnv.HandleKnowledge(ctx, msg)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]any{"message": "knowledge base updated", "size": len(msg.Data)}, nil
+}
+
+// runWF005 runs: cleanup
+func (s *Server) runWF005(ctx context.Context, req TriggerWorkflowRequest) (map[string]any, error) {
+	in := map[string]any{"repo_owner": req.RepoOwner, "repo_name": req.RepoName}
+	msg, err := msgFrom(in)
+	if err != nil {
+		return nil, err
+	}
+	if _, err = s.WorkflowEnv.HandleCleanup(ctx, msg); err != nil {
+		return nil, err
+	}
+	return map[string]any{"message": "cleanup completed"}, nil
+}
+
+// runWF006 runs: state.track
+func (s *Server) runWF006(ctx context.Context, req TriggerWorkflowRequest) (map[string]any, error) {
+	in := map[string]any{"repo_owner": req.RepoOwner, "repo_name": req.RepoName}
+	msg, err := msgFrom(in)
+	if err != nil {
+		return nil, err
+	}
+	if _, err = s.WorkflowEnv.HandleStateTrack(ctx, msg); err != nil {
+		return nil, err
+	}
+	return map[string]any{"message": "state tracking completed"}, nil
+}
+
+// runWF007 runs: report.generate
+func (s *Server) runWF007(ctx context.Context, req TriggerWorkflowRequest) (map[string]any, error) {
+	in := map[string]any{"repo_owner": req.RepoOwner, "repo_name": req.RepoName}
+	msg, err := msgFrom(in)
+	if err != nil {
+		return nil, err
+	}
+	if _, err = s.WorkflowEnv.HandleReport(ctx, msg); err != nil {
+		return nil, err
+	}
+	return map[string]any{"message": "report generated"}, nil
 }

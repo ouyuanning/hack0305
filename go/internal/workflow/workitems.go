@@ -118,30 +118,21 @@ func (e *Env) handleCollect(ctx context.Context, _ moi.WorkItemContext, msg *mow
 	if err := json.Unmarshal([]byte(msg.Data), &in); err != nil {
 		return nil, err
 	}
-	issues := []IssueWithComments{}
-	page := 1
 	var since *time.Time
 	if strings.TrimSpace(in.Since) != "" {
 		if t, err := time.Parse(time.RFC3339, in.Since); err == nil {
 			since = &t
 		}
 	}
-	for {
-		batch, rawCount, err := e.GitHub.FetchIssues(ctx, in.RepoOwner, in.RepoName, "all", since, page, 100)
-		if err != nil {
-			return nil, err
-		}
-		if len(batch) == 0 && rawCount == 0 {
-			break
-		}
-		for _, it := range batch {
-			comments, _ := e.GitHub.FetchComments(ctx, in.RepoOwner, in.RepoName, it.Number)
-			issues = append(issues, IssueWithComments{Issue: it, Comments: comments})
-		}
-		if rawCount < 100 {
-			break
-		}
-		page++
+	// FetchIssues now handles all pagination internally via since-cursor
+	allIssues, _, err := e.GitHub.FetchIssues(ctx, in.RepoOwner, in.RepoName, "all", since, 1, 100)
+	if err != nil {
+		return nil, err
+	}
+	issues := make([]IssueWithComments, 0, len(allIssues))
+	for _, it := range allIssues {
+		comments, _ := e.GitHub.FetchComments(ctx, in.RepoOwner, in.RepoName, it.Number)
+		issues = append(issues, IssueWithComments{Issue: it, Comments: comments})
 	}
 	out := CollectOutput{RepoOwner: in.RepoOwner, RepoName: in.RepoName, Snapshot: time.Now(), Issues: issues}
 	data, _ := json.Marshal(out)
@@ -968,4 +959,46 @@ func sharedFeaturesMarkdown(report map[string]any) string {
 		)
 	}
 	return strings.Join(lines, "\n")
+}
+
+// ---------- Public wrappers for direct invocation from API layer ----------
+
+// HandleCollect is the public wrapper for handleCollect.
+func (e *Env) HandleCollect(ctx context.Context, msg *mowl.MowlMessage) (*mowl.MowlMessage, error) {
+	return e.handleCollect(ctx, nil, msg)
+}
+
+// HandleParse is the public wrapper for handleParse.
+func (e *Env) HandleParse(ctx context.Context, msg *mowl.MowlMessage) (*mowl.MowlMessage, error) {
+	return e.handleParse(ctx, nil, msg)
+}
+
+// HandleRelations is the public wrapper for handleRelations.
+func (e *Env) HandleRelations(ctx context.Context, msg *mowl.MowlMessage) (*mowl.MowlMessage, error) {
+	return e.handleRelations(ctx, nil, msg)
+}
+
+// HandleStore is the public wrapper for handleStore.
+func (e *Env) HandleStore(ctx context.Context, msg *mowl.MowlMessage) (*mowl.MowlMessage, error) {
+	return e.handleStore(ctx, nil, msg)
+}
+
+// HandleKnowledge is the public wrapper for handleKnowledge.
+func (e *Env) HandleKnowledge(ctx context.Context, msg *mowl.MowlMessage) (*mowl.MowlMessage, error) {
+	return e.handleKnowledge(ctx, nil, msg)
+}
+
+// HandleCleanup is the public wrapper for handleCleanup.
+func (e *Env) HandleCleanup(ctx context.Context, msg *mowl.MowlMessage) (*mowl.MowlMessage, error) {
+	return e.handleCleanup(ctx, nil, msg)
+}
+
+// HandleStateTrack is the public wrapper for handleStateTrack.
+func (e *Env) HandleStateTrack(ctx context.Context, msg *mowl.MowlMessage) (*mowl.MowlMessage, error) {
+	return e.handleStateTrack(ctx, nil, msg)
+}
+
+// HandleReport is the public wrapper for handleReport.
+func (e *Env) HandleReport(ctx context.Context, msg *mowl.MowlMessage) (*mowl.MowlMessage, error) {
+	return e.handleReport(ctx, nil, msg)
 }

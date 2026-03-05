@@ -12,9 +12,11 @@ import (
 	"github.com/matrixorigin/issue-manager/internal/analysis"
 	"github.com/matrixorigin/issue-manager/internal/api"
 	"github.com/matrixorigin/issue-manager/internal/config"
+	"github.com/matrixorigin/issue-manager/internal/email"
 	"github.com/matrixorigin/issue-manager/internal/github"
 	"github.com/matrixorigin/issue-manager/internal/llm"
 	"github.com/matrixorigin/issue-manager/internal/storage"
+	"github.com/matrixorigin/issue-manager/internal/workflow"
 )
 
 func main() {
@@ -50,13 +52,36 @@ func main() {
 		{Owner: "matrixorigin", Name: "matrixflow", DisplayName: "MatrixFlow"},
 	}
 
+	wfEnv := &workflow.Env{
+		GitHub:            gh,
+		LLM:               llmClient,
+		Store:             store,
+		Analyzer:          analyzer,
+		WorkspaceID:       cfg.MOI.WorkspaceID,
+		Client:            client,
+		BrowserCDP:        cfg.Browser.CDPURL,
+		BrowserCDPEnabled: cfg.Browser.CDPEnabled,
+		MirrorLocal:       cfg.Report.MirrorLocal,
+		MirrorPath:        cfg.Report.MirrorPath,
+		EmailTo:           cfg.SMTP.DefaultTo,
+		SMTPConfig: email.Config{
+			Host:     cfg.SMTP.Host,
+			Port:     cfg.SMTP.Port,
+			User:     cfg.SMTP.User,
+			Password: cfg.SMTP.Password,
+			From:     cfg.SMTP.From,
+			FromName: cfg.SMTP.FromName,
+		},
+	}
+
 	srv := &api.Server{
-		Store:     store,
-		Analyzer:  analyzer,
-		GitHub:    gh,
-		LLM:       llmClient,
-		Repos:     repos,
-		Workflows: api.NewWorkflowManager(),
+		Store:       store,
+		Analyzer:    analyzer,
+		GitHub:      gh,
+		LLM:         llmClient,
+		Repos:       repos,
+		Workflows:   api.NewWorkflowManager(),
+		WorkflowEnv: wfEnv,
 	}
 
 	r := gin.New()

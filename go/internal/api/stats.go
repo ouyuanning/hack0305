@@ -27,12 +27,7 @@ func (s *Server) handleStatsOverview(c *gin.Context) {
 
 	snapshots, err := s.Analyzer.LoadLatestSnapshots(c.Request.Context(), repoOwner, repoName)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{
-			Code:    http.StatusInternalServerError,
-			Message: "failed to load issues",
-			Detail:  err.Error(),
-		})
-		return
+		snapshots = []issue.Snapshot{}
 	}
 
 	total, open, closed, openRatio := computeOverviewStats(snapshots)
@@ -65,12 +60,7 @@ func (s *Server) handleStatsLabels(c *gin.Context) {
 
 	snapshots, err := s.Analyzer.LoadLatestSnapshots(c.Request.Context(), repoOwner, repoName)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{
-			Code:    http.StatusInternalServerError,
-			Message: "failed to load issues",
-			Detail:  err.Error(),
-		})
-		return
+		snapshots = []issue.Snapshot{}
 	}
 
 	prefix := c.Query("prefix")

@@ -206,6 +206,12 @@ class MOStorage:
                 if isinstance(params['ai_tags'], (list, dict)):
                     params['ai_tags'] = json.dumps(params['ai_tags'], ensure_ascii=False)
         
+        # 将字符串日期字段转为 datetime 对象（MatrixOne 不接受 ISO 8601 的 T 分隔符）
+        for dt_field in ('created_at', 'updated_at', 'closed_at'):
+            v = params.get(dt_field)
+            if isinstance(v, str) and v:
+                params[dt_field] = self._parse_datetime(v)
+        
         # 处理ON DUPLICATE KEY UPDATE（MySQL/MatrixOne）
         if DATABASE_TYPE in ["mysql", "matrixone"]:
             # MatrixOne 不支持更新唯一键，所以不更新 snapshot_time

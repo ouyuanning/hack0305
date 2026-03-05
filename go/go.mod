@@ -20,6 +20,6 @@ require (
 	google.golang.org/protobuf v1.36.5 // indirect
 )
 
-replace github.com/matrixflow/moi-core/go-sdk => /Users/zhangxu/Projects/go/matrixflow/moi-core/go-sdk
+replace github.com/matrixflow/moi-core/go-sdk => /Users/ouyuanning/workspace/go/src/matrixflow/moi-core/go-sdk
 
-replace github.com/matrixflow/moi-core/model => /Users/zhangxu/Projects/go/matrixflow/moi-core/model
+replace github.com/matrixflow/moi-core/model => /Users/ouyuanning/workspace/go/src/matrixflow/moi-core/model

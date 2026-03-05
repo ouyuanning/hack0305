@@ -55,13 +55,38 @@
 pip3 install -r requirements.txt
 ```
 
-### 2. 配置系统
+### 2. 配置环境变量
 
-编辑 `config/config.py` 文件，设置：
+所有密钥和数据库连接信息通过 `.env` 文件管理，不要硬编码到代码中。
 
-- **GitHub Token**：从 [GitHub Settings](https://github.com/settings/tokens) 获取
-- **AI API Key**：选择OpenAI、Claude或通义千问
-- **数据库配置**：选择并配置数据库（SQLite最简单，无需额外配置）
+```bash
+cp .env.example .env
+```
+
+编辑 `.env` 文件，填入实际值：
+
+| 变量 | 说明 | 必填 |
+|------|------|------|
+| `GITHUB_TOKEN` | GitHub Personal Access Token | ✅ |
+| `DASHSCOPE_API_KEY` | 通义千问 API Key（推荐） | ✅（AI 功能） |
+| `CLAUDE_API_KEY` | Claude API Key（可选替代） | 否 |
+| `MATRIXONE_HOST` | MatrixOne 主机地址 | ✅（使用 MO 时） |
+| `MATRIXONE_PORT` | MatrixOne 端口（默认 6001） | ✅（使用 MO 时） |
+| `MATRIXONE_USER` | MatrixOne 用户名 | ✅（使用 MO 时） |
+| `MATRIXONE_PASSWORD` | MatrixOne 密码 | ✅（使用 MO 时） |
+| `SMTP_PASSWORD` | SMTP 邮箱授权码 | 否（发邮件时需要） |
+
+> `.env` 文件已在 `.gitignore` 中，不会被提交到 Git。模板文件 `.env.example` 不含真实密钥，可安全提交。
+
+`config/config.py` 会自动加载 `.env` 文件中的变量，也可以通过系统环境变量覆盖。
+
+### 3. 配置系统
+
+如需调整 AI 提供商、数据库类型等非密钥配置，编辑 `config/config.py`：
+
+- **AI_PROVIDER**：`qwen`（默认）、`claude`、`openai`、`local`
+- **DATABASE_TYPE**：`matrixone`（默认）、`sqlite`、`mysql`、`postgresql`
+- **SMTP 发件人**等其他配置
 
 ### 3. 运行系统
 
@@ -346,6 +371,41 @@ A:
 A: 在配置文件中设置 `ENABLE_FULL_RESYNC = True`，或在运行时选择全量同步。
 
 更多问题请参考 [常见问题](docs/使用教程.md#常见问题)
+
+## 🧪 集成测试
+
+集成测试脚本 `tests/test_integration.py` 会连接本地 MatrixOne，插入模拟数据后验证 WF-005（历史数据清洗）和 WF-006（客户标签同步）的完整流程。
+
+### 前置条件
+
+1. 本地 MatrixOne 已启动（通过 moi-core 或独立部署），可通过以下命令验证连接：
+
+```bash
+mysql -h 127.0.0.1 -P 6001 -udump -p111 --ssl-mode=DISABLED -e "SELECT 1"
+```
+
+2. 创建数据库并建表：
+
+```bash
+mysql -h 127.0.0.1 -P 6001 -udump -p111 --ssl-mode=DISABLED -e "CREATE DATABASE IF NOT EXISTS github_issues;"
+mysql -h 127.0.0.1 -P 6001 -udump -p111 --ssl-mode=DISABLED github_issues < create_tables.sql
+```
+
+3. `.env` 中已配置本地 MO 连接信息（参考 `.env.example`）。
+
+### 运行测试
+
+```bash
+# 在 src/ 目录下执行
+python3 tests/test_integration.py
+```
+
+### 测试覆盖内容
+
+- **WF-005 历史数据清洗**：load_issues → clean_data → ai_relabel（规则回退）→ validate_quality → save_to_experimental → run() 完整流程 → 幂等性 → 变更日志
+- **WF-006 客户标签同步**：表创建 → sync_customer_issues → 数据验证（字段、severity 提取、URL）→ 幂等性 → 不存在标签返回 0
+
+测试数据使用隔离的 `repo_owner=_test_integ`，测试结束后自动清理，不影响正式数据。
 
 ## 📄 许可证
 

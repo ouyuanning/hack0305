@@ -65,16 +65,20 @@ func (c *Client) FetchIssues(ctx context.Context, owner, repo, state string, sin
 	// We use since-cursor pagination: fetch all pages using updated_at as cursor.
 	var all []Issue
 	cursor := since
+	pageNum := 0
 	for {
+		pageNum++
 		url := fmt.Sprintf("%s/repos/%s/%s/issues?state=%s&per_page=%d&direction=asc&sort=updated", c.baseURL, owner, repo, state, perPage)
 		if cursor != nil {
 			url += "&since=" + cursor.UTC().Format(time.RFC3339)
 		}
+		fmt.Printf("[FetchIssues] page=%d url=%s\n", pageNum, url)
 		var batch []Issue
 		_, err := c.do(ctx, url, &batch)
 		if err != nil {
 			return nil, 0, err
 		}
+		fmt.Printf("[FetchIssues] page=%d raw_batch=%d (including PRs)\n", pageNum, len(batch))
 		// Filter out pull requests
 		for _, it := range batch {
 			if it.PullRequest != nil {
@@ -82,6 +86,7 @@ func (c *Client) FetchIssues(ctx context.Context, owner, repo, state string, sin
 			}
 			all = append(all, it)
 		}
+		fmt.Printf("[FetchIssues] page=%d issues_so_far=%d\n", pageNum, len(all))
 		if len(batch) < perPage {
 			break
 		}
@@ -95,6 +100,7 @@ func (c *Client) FetchIssues(ctx context.Context, owner, repo, state string, sin
 			break
 		}
 	}
+	fmt.Printf("[FetchIssues] done total=%d\n", len(all))
 	return all, len(all), nil
 }
 

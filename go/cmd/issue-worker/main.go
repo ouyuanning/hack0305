@@ -36,7 +36,7 @@ func main() {
 	}
 	defer client.Close()
 
-	store := storage.NewVolumeStore(client, cfg.MOI.WorkspaceID, cfg.MOI.DatabaseID, cfg.MOI.VolumeName, cfg.Storage.BasePath)
+	store := storage.NewVolumeStore(client, cfg.MOI.WorkspaceID, cfg.MOI.DatabaseID, cfg.MOI.VolumeName, cfg.Storage.BasePath, cfg.MOI.BaseURL, cfg.MOI.APIKey)
 	analyzer := analysis.New(store)
 	gh := github.New(cfg.GitHub.BaseURL, cfg.GitHub.Token)
 	llmClient := llm.New(client, cfg.MOI.WorkspaceID, cfg.LLM.Model)

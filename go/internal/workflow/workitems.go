@@ -122,8 +122,14 @@ func (e *Env) handleCollect(ctx context.Context, _ moi.WorkItemContext, msg *mow
 	if strings.TrimSpace(in.Since) != "" {
 		if t, err := time.Parse(time.RFC3339, in.Since); err == nil {
 			since = &t
+			fmt.Printf("[handleCollect] since parsed OK: %s\n", t.Format(time.RFC3339))
+		} else {
+			fmt.Printf("[handleCollect] since parse FAILED: raw=%q err=%v\n", in.Since, err)
 		}
+	} else {
+		fmt.Printf("[handleCollect] since is empty, full fetch\n")
 	}
+	fmt.Printf("[handleCollect] repo=%s/%s since_raw=%q\n", in.RepoOwner, in.RepoName, in.Since)
 	// FetchIssues now handles all pagination internally via since-cursor
 	allIssues, _, err := e.GitHub.FetchIssues(ctx, in.RepoOwner, in.RepoName, "all", since, 1, 100)
 	if err != nil {

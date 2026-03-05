@@ -24,7 +24,7 @@ smtp:
   port: 465
   user: "${SMTP_USER}"
   password: "${SMTP_PASSWORD}"
-  from: "${SMTP_USER}"
+  from: "${SMTP_FROM}"
   from_name: "GitHub Issue 智能管理系统"
   default_to: "${SMTP_DEFAULT_TO}"
 

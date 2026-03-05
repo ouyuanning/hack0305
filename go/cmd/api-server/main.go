@@ -41,6 +41,8 @@ func main() {
 		cfg.MOI.DatabaseID,
 		cfg.MOI.VolumeName,
 		cfg.Storage.BasePath,
+		cfg.MOI.BaseURL,
+		cfg.MOI.APIKey,
 	)
 	analyzer := analysis.New(store)
 	gh := github.New(cfg.GitHub.BaseURL, cfg.GitHub.Token)

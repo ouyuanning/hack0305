@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>问数深化 — 项目看板</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f0f2f5; color: #1a1a2e; font-size: 12px; }
+    .header { background: linear-gradient(135deg, #1a365d 0%, #2d5a87 100%); color: white; padding: 16px 24px; position: sticky; top: 0; z-index: 200; }
+    .header h1 { font-size: 17px; font-weight: 600; }
+    .header .subtitle { font-size: 11px; opacity: 0.8; margin-top: 3px; }
+    .legend { display: flex; gap: 14px; margin-top: 8px; flex-wrap: wrap; }
+    .legend-item { display: flex; align-items: center; gap: 4px; font-size: 10px; opacity: 0.9; }
+    .legend-dot { width: 14px; height: 10px; border-radius: 2px; }
+    .container { padding: 16px; overflow: auto; max-height: calc(100vh - 220px); }
+    table.board { border-collapse: collapse; width: 100%; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; }
+    table.board th, table.board td { border: 1px solid #e0e0e0; padding: 8px 10px; text-align: left; }
+    table.board thead th { background: #2F5496; color: white; font-size: 11px; font-weight: 500; }
+    table.board tbody tr:hover { background: #f5f8ff; }
+    table.board .c-idx { width: 36px; text-align: center; color: #666; }
+    table.board .c-task { min-width: 200px; }
+    table.board .c-owner { width: 90px; color: #555; }
+    table.board .c-st { width: 80px; text-align: center; }
+    table.board .c-progress { width: 70px; text-align: center; }
+    table.board .c-note { min-width: 160px; color: #666; font-size: 11px; }
+    .sb { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 10px; font-weight: 500; }
+    .sb-b { background: #fce4e4; color: #c0392b; }
+    .sb-p { background: #fff3cd; color: #856404; }
+    .sb-d { background: #d4edda; color: #155724; }
+    .summary { margin: 16px; padding: 14px; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .summary h3 { font-size: 13px; color: #1a365d; margin-bottom: 8px; }
+    .sg { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 8px; }
+    .sc { padding: 8px 10px; border-radius: 6px; border-left: 3px solid; font-size: 11px; }
+    .sc.hi { border-color: #e74c3c; background: #fef5f5; }
+    .sc.mi { border-color: #f39c12; background: #fffbf0; }
+    .sc.lo { border-color: #27ae60; background: #f0faf4; }
+    .sc b { display: block; margin-bottom: 2px; }
+    .link { color: #0969da; text-decoration: none; }
+    .link:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="header">
+  <h1>问数深化 项目计划 — 看板</h1>
+  <div class="subtitle">更新: 2026-02-26 | 共 5 项，已完成 1 项，平均进度 56%</div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#fce4e4"></div>🔴 卡点/阻塞</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#fff3cd"></div>🟡 进行中</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#d4edda"></div>✅ 完成</div>
+  </div>
+</div>
+<div class="container">
+  <table class="board">
+    <thead><tr><th class="c-idx">#</th><th class="c-task">任务</th><th class="c-owner">负责人</th><th class="c-st">状态</th><th class="c-progress">进度</th><th class="c-note">备注</th></tr></thead>
+    <tbody>
+      <tr><td class="c-idx">1</td><td class="c-task"><a class="link" href="https://github.com/matrixorigin/matrixflow/issues/9001">#9001</a> [L1] 问数深化项目</td><td class="c-owner">wupeng</td><td class="c-st"><span class="sb sb-p">🟡 进行</span></td><td class="c-progress">80%</td><td class="c-note">—</td></tr>
+      <tr><td class="c-idx">2</td><td class="c-task"><a class="link" href="https://github.com/matrixorigin/matrixflow/issues/9002">#9002</a> [L3] 单据检索 PRD 设计</td><td class="c-owner">wupeng</td><td class="c-st"><span class="sb sb-p">🟡 进行</span></td><td class="c-progress">30%</td><td class="c-note">⚠️ 逾期 3 天</td></tr>
+      <tr><td class="c-idx">3</td><td class="c-task"><a class="link" href="https://github.com/matrixorigin/matrixflow/issues/9003">#9003</a> [L3] CRM 接口对接</td><td class="c-owner">zhangsan</td><td class="c-st"><span class="sb sb-b">🔴 卡点</span></td><td class="c-progress">10%</td><td class="c-note">阻塞中</td></tr>
+      <tr><td class="c-idx">4</td><td class="c-task"><a class="link" href="https://github.com/matrixorigin/matrixflow/issues/9004">#9004</a> [L3] SAP 接口对接</td><td class="c-owner">lisi</td><td class="c-st"><span class="sb sb-d">✅ 完成</span></td><td class="c-progress">100%</td><td class="c-note">—</td></tr>
+      <tr><td class="c-idx">5</td><td class="c-task"><a class="link" href="https://github.com/matrixorigin/matrixflow/issues/9005">#9005</a> [L4] 合同智能体调用报错 500</td><td class="c-owner">wupeng</td><td class="c-st"><span class="sb sb-p">🟡 进行</span></td><td class="c-progress">60%</td><td class="c-note">⚠️ 逾期 1 天</td></tr>
+    </tbody>
+  </table>
+</div>
+<div class="summary">
+  <h3>📊 风险评估</h3>
+  <div class="sg">
+    <div class="sc hi"><b>#9003 [L3] CRM 接口对接 🔴</b>当前阻塞，需优先推动</div>
+    <div class="sc hi"><b>#9002 [L3] 单据检索 PRD 设计 ⚠️</b>逾期 3 天</div>
+    <div class="sc hi"><b>#9005 [L4] 合同智能体调用报错 500 ⚠️</b>逾期 1 天</div>
+    <div class="sc mi"><b>#9001 [L1] 问数深化项目</b>进行中 80%</div>
+    <div class="sc lo"><b>#9004 [L3] SAP 接口对接 ✅</b>已完成</div>
+  </div>
+</div>
+</body>
+</html>

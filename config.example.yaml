@@ -1,0 +1,33 @@
+moi:
+  base_url: "https://api.example.com"
+  api_key: "your-api-key"
+  workspace_id: "ws-xxx"
+  database_id: 1
+  volume_name: "issue-data"
+
+github:
+  token: "ghp_..."
+  base_url: "https://api.github.com"
+
+llm:
+  model: "qwen-plus"
+
+smtp:
+  host: "smtp.163.com"
+  port: 465
+  user: "user@example.com"
+  password: "smtp-auth"
+  from: "user@example.com"
+  from_name: "GitHub Issue 智能管理系统"
+  default_to: "receiver@example.com"
+
+storage:
+  base_path: "repos"
+
+report:
+  mirror_local: true
+  mirror_path: "data/reports"
+
+browser:
+  cdp_enabled: true
+  cdp_url: "http://127.0.0.1:9222"

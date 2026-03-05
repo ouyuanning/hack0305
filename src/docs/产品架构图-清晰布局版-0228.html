@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Issue 智能管理系统 - 产品架构图（清晰版）</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .diagram-section {
+            margin-bottom: 50px;
+        }
+        
+        .section-title {
+            font-size: 28px;
+            font-weight: 600;
+            color: #1976d2;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #1976d2;
+        }
+        
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            min-height: 600px;
+        }
+        
+        .description {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-left: 5px solid #1976d2;
+            padding: 25px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .description h3 {
+            color: #1976d2;
+            margin-bottom: 15px;
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .description ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .description li {
+            padding: 10px 0;
+            padding-left: 30px;
+            position: relative;
+            line-height: 1.8;
+            font-size: 15px;
+        }
+        
+        .description li::before {
+            content: '▸';
+            position: absolute;
+            left: 0;
+            color: #1976d2;
+            font-weight: bold;
+            font-size: 20px;
+        }
+        
+        .highlight-box {
+            background: #fff9c4;
+            border: 3px solid #f57c00;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .highlight-box h4 {
+            color: #e65100;
+            margin-bottom: 10px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .legend {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 25px 0;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+        }
+        
+        .legend-color {
+            width: 35px;
+            height: 35px;
+            border-radius: 6px;
+            margin-right: 15px;
+            border: 2px solid #ddd;
+        }
+        
+        .footer {
+            background: #f5f5f5;
+            padding: 25px 40px;
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>GitHub Issue 智能管理系统</h1>
+            <p>产品逻辑架构图 - 清晰分层布局（左侧闭环 + 右侧分支）</p>
+        </div>
+        
+        <div class="content">
+            <!-- 主架构图 -->
+            <div class="diagram-section">
+                <h2 class="section-title">🏗️ 完整系统架构（左右分离）</h2>
+                
+                <div class="highlight-box">
+                    <h4>📐 布局说明</h4>
+                    <p><strong>左侧</strong>：主闭环流程（数据源 → MO仓库 → 知识库 → 自动提Issue → 创建到GitHub）</p>
+                    <p><strong>右侧</strong>：分支功能（历史清洗 + 项目看板）</p>
+                </div>
+                
+                <div class="mermaid">
+graph LR
+    subgraph LEFT["🔄 主闭环流程（左侧）"]
+        direction TB
+        
+        L1["1️⃣ 数据源<br/>━━━━━━━<br/>GitHub仓库<br/>代码仓库"]
+        L2["2️⃣ AI处理<br/>━━━━━━━<br/>数据采集清洗"]
+        L3["3️⃣ MO仓库<br/>━━━━━━━<br/>Issue快照"]
+        L4["4️⃣ AI处理<br/>━━━━━━━<br/>知识提炼"]
+        L5["5️⃣ 知识库<br/>━━━━━━━<br/>产品/模板/规则"]
+        L6["6️⃣ 自动提Issue<br/>━━━━━━━<br/>判断/选择/填充"]
+        L7["7️⃣ 交互层<br/>━━━━━━━<br/>企微/Cursor"]
+        L8["8️⃣ 输出<br/>━━━━━━━<br/>创建Issue"]
+        
+        L1 --> L2
+        L2 --> L3
+        L3 --> L4
+        L4 --> L5
+        L5 --> L6
+        L6 --> L7
+        L7 --> L8
+        L8 -.闭环.-> L1
+    end
+    
+    subgraph RIGHT["📊 分支功能（右侧）"]
+        direction TB
+        
+        R1["📋 项目库<br/>━━━━━━━<br/>特定Tag条目"]
+        R2["🔧 功能2：历史清洗<br/>━━━━━━━<br/>基于规则打标签"]
+        R3["💾 试验库<br/>━━━━━━━<br/>清洗后数据"]
+        
+        R4["📈 功能3：项目看板<br/>━━━━━━━<br/>AI分析+统计"]
+        R5["📤 输出<br/>━━━━━━━<br/>企微通知+邮箱"]
+        
+        R1 --> R4
+        R4 --> R5
+        
+        R2 --> R3
+    end
+    
+    %% 连接主流程到分支
+    L3 -.拉取Tag.-> R1
+    L3 -.历史数据.-> R2
+    L5 -.提供规则.-> R2
+    L6 -.匹配检索.-> L3
+    
+    %% 样式
+    classDef mainLoop fill:#e3f2fd,stroke:#1976d2,stroke-width:3px,color:#000
+    classDef branch fill:#fff3e0,stroke:#f57c00,stroke-width:3px,color:#000
+    
+    class L1,L2,L3,L4,L5,L6,L7,L8 mainLoop
+    class R1,R2,R3,R4,R5 branch
+    
+    style LEFT fill:#e3f2fd10,stroke:#1976d2,stroke-width:2px
+    style RIGHT fill:#fff3e010,stroke:#f57c00,stroke-width:2px
+                </div>
+                
+                <div class="description">
+                    <h3>🎯 架构说明</h3>
+                    <ul>
+                        <li><strong>左侧闭环</strong>：数据源 → AI采集 → MO仓库 → AI提炼 → 知识库 → 自动提Issue → 交互层 → 创建Issue → 回到GitHub（形成完整闭环）</li>
+                        <li><strong>右侧分支</strong>：从MO仓库和知识库分出两个功能：① 历史清洗（存试验库）② 项目看板（输出到企微和邮箱）</li>
+                        <li><strong>核心连接</strong>：MO仓库是中心，向右分支出项目库和历史清洗；知识库向下支撑自动提Issue，也向右支撑历史清洗</li>
+                    </ul>
+                </div>
+                
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#e3f2fd;border-color:#1976d2"></div>
+                        <span>左侧主闭环流程</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#fff3e0;border-color:#f57c00"></div>
+                        <span>右侧分支功能</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 详细流程 -->
+            <div class="diagram-section">
+                <h2 class="section-title">🔍 主闭环详细流程（8步）</h2>
+                <div class="mermaid">
+graph TD
+    START["开始"]
+    
+    STEP1["1️⃣ 数据源层<br/>━━━━━━━━━<br/>GitHub仓库 + 代码仓库<br/>（同级，有关联）"]
+    
+    STEP2["2️⃣ AI处理-采集<br/>━━━━━━━━━<br/>数据清洗/提取"]
+    
+    STEP3["3️⃣ MO仓库<br/>━━━━━━━━━<br/>Issue快照存储<br/>🔑 核心数据中台"]
+    
+    STEP4["4️⃣ AI处理-提炼<br/>━━━━━━━━━<br/>从Issue提炼知识"]
+    
+    STEP5["5️⃣ 知识库<br/>━━━━━━━━━<br/>产品/模板/规则/Tag<br/>🔑 知识沉淀"]
+    
+    STEP6["6️⃣ 自动提Issue<br/>━━━━━━━━━<br/>判断→选择→填充→Tag<br/>🔑 核心功能"]
+    
+    STEP7["7️⃣ 交互层<br/>━━━━━━━━━<br/>企微（文字+图片）<br/>Cursor（+窗口信息）"]
+    
+    STEP8["8️⃣ 输出<br/>━━━━━━━━━<br/>预览→确认→创建Issue"]
+    
+    LOOP["闭环：新Issue进入GitHub"]
+    
+    START --> STEP1
+    STEP1 --> STEP2
+    STEP2 --> STEP3
+    STEP3 --> STEP4
+    STEP4 --> STEP5
+    STEP5 --> STEP6
+    STEP6 --> STEP7
+    STEP7 --> STEP8
+    STEP8 --> LOOP
+    LOOP -.回到.-> STEP1
+    
+    %% 关键连接
+    STEP6 -.匹配检索<br/>搜索待优化.-> STEP3
+    
+    style STEP3 fill:#fff9c4,stroke:#f57c00,stroke-width:4px
+    style STEP5 fill:#e3f2fd,stroke:#1976d2,stroke-width:4px
+    style STEP6 fill:#ffe0b2,stroke:#e64a19,stroke-width:4px
+    style LOOP fill:#c8e6c9,stroke:#388e3c,stroke-width:3px
+                </div>
+            </div>
+            
+            <!-- 分支功能 -->
+            <div class="diagram-section">
+                <h2 class="section-title">📊 分支功能详细说明</h2>
+                <div class="mermaid">
+graph TB
+    subgraph CORE["核心数据（左侧闭环提供）"]
+        C1["MO仓库<br/>Issue快照"]
+        C2["知识库<br/>产品/规则"]
+    end
+    
+    subgraph BRANCH1["分支1：历史清洗"]
+        B1_1["读取历史Issue"]
+        B1_2["基于规则清洗"]
+        B1_3["打标签"]
+        B1_4["存入试验库"]
+        
+        B1_1 --> B1_2 --> B1_3 --> B1_4
+    end
+    
+    subgraph BRANCH2["分支2：项目看板"]
+        B2_1["拉取特定Tag"]
+        B2_2["存入项目库"]
+        B2_3["AI分析+统计"]
+        B2_4["生成看板"]
+        B2_5["输出通知"]
+        
+        B2_1 --> B2_2 --> B2_3 --> B2_4 --> B2_5
+    end
+    
+    subgraph OUTPUT["分支输出"]
+        O1["试验库<br/>清洗数据"]
+        O2["企微通知"]
+        O3["邮箱报告"]
+    end
+    
+    C1 --> B1_1
+    C2 --> B1_2
+    B1_4 --> O1
+    
+    C1 --> B2_1
+    B2_5 --> O2
+    B2_5 --> O3
+    
+    style C1 fill:#fff9c4,stroke:#f57c00,stroke-width:3px
+    style C2 fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
+    style BRANCH1 fill:#ffe0b220
+    style BRANCH2 fill:#ffe0b220
+                </div>
+                
+                <div class="description">
+                    <h3>分支功能说明</h3>
+                    <ul>
+                        <li><strong>分支1 - 历史清洗</strong>：从MO仓库读取历史Issue，基于知识库的规则进行清洗，打上标签后存入<strong>试验库</strong>（另一个独立库）</li>
+                        <li><strong>分支2 - 项目看板</strong>：从MO仓库拉取<strong>特定Tag的条目</strong>，存入<strong>项目库</strong>（单独的库），通过AI分析和统计模块，生成看板后输出到<strong>企微通知</strong>和<strong>邮箱</strong></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- 数据库说明 -->
+            <div class="diagram-section">
+                <h2 class="section-title">💾 三个数据库</h2>
+                <div class="mermaid">
+graph LR
+    subgraph DB["数据库架构"]
+        DB1["MO主库<br/>━━━━━━━<br/>✓ Issue快照<br/>✓ 全量数据<br/>✓ 关联关系<br/>🔑 核心数据中台"]
+        
+        DB2["项目库<br/>━━━━━━━<br/>✓ 特定Tag条目<br/>✓ 从主库拉取<br/>✓ 用于看板分析"]
+        
+        DB3["试验库<br/>━━━━━━━<br/>✓ 清洗后数据<br/>✓ 带标签<br/>✓ 用于试验"]
+    end
+    
+    SOURCE["数据源"] --> DB1
+    DB1 -.拉取Tag.-> DB2
+    DB1 -.清洗.-> DB3
+    
+    style DB1 fill:#fff9c4,stroke:#f57c00,stroke-width:4px
+    style DB2 fill:#e8f5e9,stroke:#388e3c,stroke-width:3px
+    style DB3 fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px
+                </div>
+                
+                <div class="description">
+                    <h3>数据库说明</h3>
+                    <ul>
+                        <li><strong>MO主库</strong>：核心数据中台，存储所有Issue快照，是整个系统的数据基础</li>
+                        <li><strong>项目库</strong>：从主库中拉取特定Tag的条目（如project/问数深化），用于项目看板和每日分析</li>
+                        <li><strong>试验库</strong>：历史Issue经过清洗和打标签后的数据，用于试验新规则和新功能</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- 关键技术点 -->
+            <div class="diagram-section">
+                <h2 class="section-title">💡 关键技术点</h2>
+                <div class="highlight-box">
+                    <h4>🔗 数据源同级</h4>
+                    <p>GitHub仓库和代码仓库是<strong>同一层级</strong>的数据源，它们之间有关联（待实现），最终都会通过AI处理进入MO仓库</p>
+                </div>
+                
+                <div class="highlight-box">
+                    <h4>🤖 两次AI处理</h4>
+                    <p><strong>第一次</strong>：数据采集时的AI处理（清洗/提取）<br/>
+                    <strong>第二次</strong>：生成知识库的AI处理（知识提炼）<br/>
+                    <strong>贯穿全程</strong>：核心功能中的AI处理（判断/分析/生成）</p>
+                </div>
+                
+                <div class="highlight-box">
+                    <h4>🔍 匹配方式待优化</h4>
+                    <p>自动提Issue时，根据要点与MO仓库中的Issue匹配，<strong>注意：不一定是看向量</strong>，搜索模式待优化（可能是关键词、标签、规则等多种方式）</p>
+                </div>
+                
+                <div class="highlight-box">
+                    <h4>📱 交互层差异</h4>
+                    <p><strong>企微</strong>：只能获取文字+图片<br/>
+                    <strong>Cursor</strong>：可以额外获取浏览器/窗口信息（代码文件、报错、Git分支等）</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>GitHub Issue 智能管理系统 - 产品架构图（清晰布局版）| 左侧闭环 + 右侧分支 | 基于 MatrixOne + 通义千问 | 2026-02-28</p>
+        </div>
+    </div>
+    
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            themeVariables: {
+                fontSize: '16px',
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif'
+            },
+            flowchart: {
+                rankSpacing: 100,
+                nodeSpacing: 80,
+                curve: 'basis'
+            }
+        });
+    </script>
+</body>
+</html>

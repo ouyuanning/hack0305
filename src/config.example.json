@@ -1,0 +1,11 @@
+{
+  "repo_owner": "matrixorigin",
+  "repo_name": "matrixone",
+  "email": "wupeng@matrixorigin.cn",
+  "full_sync": false,
+  "skip_email": false,
+  "skip_sync": false,
+  "skip_report": false,
+  "extensible_report": true,
+  "ai_report": true
+}

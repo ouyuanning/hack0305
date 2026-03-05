@@ -1,0 +1,76 @@
+# =============================================================================
+# GitHub Issue 可扩展分析 - 配置文件
+# 用途：控制分析维度和输出格式，修改配置即可改变分析内容
+# =============================================================================
+
+global:
+  repo_owner: "matrixorigin"
+  repo_name: "matrixone"
+  analysis_date: "auto"
+  timezone: "Asia/Shanghai"
+
+analyzers:
+  - name: basic_stats
+    enabled: true
+    config:
+      dimensions: [state, issue_type, priority, status]
+      show_percentages: true
+
+  - name: label_analysis
+    enabled: true
+    config:
+      top_labels_count: 30
+      label_categories:
+        - {prefix: "kind/", name: "Issue类型"}
+        - {prefix: "area/", name: "功能模块"}
+        - {prefix: "customer/", name: "客户"}
+        - {prefix: "severity/", name: "严重程度"}
+      show_label_combinations: true
+      top_combinations_count: 15
+
+  - name: module_analysis
+    enabled: true
+    config:
+      extract_from_labels: true
+      extract_from_ai_tags: true
+      top_modules_count: 20
+      identify_hot_modules: true
+
+  - name: hierarchy_analysis
+    enabled: true
+    config:
+      analyze_levels: true
+      identify_orphan_issues: true
+
+  - name: customer_analysis
+    enabled: true
+    config:
+      analyze_each_customer: true
+      identify_shared_features: true
+
+  - name: relation_analysis
+    enabled: true
+    config:
+      find_most_referenced: true
+      top_referenced_count: 15
+      analyze_blocking_chains: true
+
+  - name: trend_analysis
+    enabled: true
+    config:
+      time_windows: [7, 30, 90]
+      metrics: [new_issues, closed_issues, resolution_rate]
+
+output:
+  base_dir: "data/reports"
+  formats:
+    - type: json
+      enabled: true
+      filename: "extensible_analysis_{date}.json"
+    - type: markdown
+      enabled: true
+      filename: "extensible_analysis_{date}.md"
+
+advanced:
+  parallel_analysis: false
+  log_level: "INFO"

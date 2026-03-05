@@ -1,0 +1,7 @@
+# 本地监控依赖（仅本地需要，云端不安装）
+# 混合方案：4层智能检测（CDP→窗口→剪贴板→手动）
+# macOS 窗口/剪贴板检测
+pyobjc-framework-Quartz>=9.2; sys_platform == 'darwin'
+pyobjc-framework-Cocoa>=9.2; sys_platform == 'darwin'
+# Windows 窗口/剪贴板检测
+pywin32>=305; sys_platform == 'win32'

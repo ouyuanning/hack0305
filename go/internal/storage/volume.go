@@ -219,3 +219,26 @@ func BuildManifest(snapshot time.Time, files map[string]*catalog.File) map[strin
 	}
 	return manifest
 }
+
+// ClearAllData deletes the entire volume and recreates it to reset all data.
+func (s *VolumeStore) ClearAllData(ctx context.Context) error {
+	if _, err := s.EnsureVolume(ctx); err != nil {
+		return err
+	}
+
+	// Delete the entire volume
+	volSvc := s.client.Volumes()
+	if err := volSvc.Delete(ctx, s.workspaceID, s.volumeID); err != nil {
+		return fmt.Errorf("failed to delete volume: %w", err)
+	}
+
+	// Reset volume ID so it will be recreated on next use
+	s.volumeID = 0
+
+	// Recreate the volume
+	if _, err := s.EnsureVolume(ctx); err != nil {
+		return fmt.Errorf("failed to recreate volume: %w", err)
+	}
+
+	return nil
+}

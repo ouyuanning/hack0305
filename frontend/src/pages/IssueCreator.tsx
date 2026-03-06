@@ -107,11 +107,6 @@ export default function IssueCreator() {
     }
   }, [location.state]);
 
-  // Step 2: creating
-  const [createLoading, setCreateLoading] = useState(false);
-  const [createError, setCreateError] = useState<string | null>(null);
-  const [createdIssue, setCreatedIssue] = useState<{ issue_number: number; html_url: string } | null>(null);
-
   // Upload config: prevent auto-upload, only accept images
   const uploadProps: UploadProps = {
     name: 'file',

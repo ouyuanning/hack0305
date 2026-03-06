@@ -25,10 +25,13 @@ apiClient.interceptors.response.use(
     if (error.response?.data) {
       const errData = error.response.data as ErrorResponse;
       const message = errData.message || errData.detail || '请求失败';
-      return Promise.reject(new Error(message));
+      // Create a custom error that preserves the response object
+      const customError = new Error(message) as Error & { response?: typeof error.response };
+      customError.response = error.response;
+      return Promise.reject(customError);
     }
     if (error.message) {
-      return Promise.reject(new Error(error.message));
+      return Promise.reject(error);
     }
     return Promise.reject(new Error('网络错误'));
   },

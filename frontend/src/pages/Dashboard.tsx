@@ -11,6 +11,9 @@ import {
   Progress,
   Typography,
   Tag,
+  Modal,
+  Space,
+  message,
 } from 'antd';
 import {
   ReloadOutlined,
@@ -18,10 +21,13 @@ import {
   CheckCircleOutlined,
   ExclamationCircleOutlined,
   PercentageOutlined,
+  DeleteOutlined,
+  WarningOutlined,
 } from '@ant-design/icons';
 import ReactECharts from 'echarts-for-react';
 import { useNavigate } from 'react-router-dom';
 import { fetchOverview, fetchLabelsStats } from '@/api/issues';
+import { resetSystem } from '@/api/system';
 import { useAppStore } from '@/stores/appStore';
 import type { OverviewResponse, LabelsResponse } from '@/types';
 
@@ -35,6 +41,7 @@ export default function Dashboard() {
   const [labelsData, setLabelsData] = useState<LabelsResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resetting, setResetting] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -57,6 +64,45 @@ export default function Dashboard() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  const handleReset = () => {
+    Modal.confirm({
+      title: '确认重置系统',
+      icon: <WarningOutlined style={{ color: '#ff4d4f' }} />,
+      content: (
+        <div>
+          <p>此操作将清除所有数据，包括：</p>
+          <ul>
+            <li>本地报告文件</li>
+            <li>MOI Volume 中的所有快照和分析数据</li>
+            <li>工作流执行历史</li>
+          </ul>
+          <p style={{ color: '#ff4d4f', fontWeight: 'bold' }}>
+            此操作不可恢复，请谨慎操作！
+          </p>
+        </div>
+      ),
+      okText: '确认重置',
+      okType: 'danger',
+      cancelText: '取消',
+      onOk: async () => {
+        setResetting(true);
+        try {
+          const result = await resetSystem({ confirm: true });
+          message.success(result.message || '系统重置成功');
+          // Reload data after reset
+          setTimeout(() => {
+            loadData();
+          }, 1000);
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : '重置失败';
+          message.error(msg);
+        } finally {
+          setResetting(false);
+        }
+      },
+    });
+  };
 
   const getLabelChartOption = () => {
     if (!labelsData?.groups) return {};
@@ -157,9 +203,28 @@ export default function Dashboard() {
 
   return (
     <div>
-      <Title level={4} style={{ marginBottom: 24 }}>
-        Dashboard 总览
-      </Title>
+      <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
+        <Col>
+          <Title level={4} style={{ margin: 0 }}>
+            Dashboard 总览
+          </Title>
+        </Col>
+        <Col>
+          <Space>
+            <Button icon={<ReloadOutlined />} onClick={loadData} loading={loading}>
+              刷新
+            </Button>
+            <Button
+              danger
+              icon={<DeleteOutlined />}
+              onClick={handleReset}
+              loading={resetting}
+            >
+              重置系统
+            </Button>
+          </Space>
+        </Col>
+      </Row>
 
       {error && (
         <Alert

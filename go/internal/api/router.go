@@ -48,6 +48,9 @@ func (s *Server) RegisterRoutes(r *gin.Engine) {
 	// AI endpoint
 	v1.POST("/ai/generate-issue", s.handleGenerateIssue)
 
+	// System endpoints
+	v1.POST("/system/reset", s.handleSystemReset)
+
 	// Repository list endpoint
 	v1.GET("/repos", s.handleListRepos)
 }

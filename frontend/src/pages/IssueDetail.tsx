@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Tag,
   Card,
@@ -68,7 +68,12 @@ function getTimelineTime(event: TimelineEvent): string {
 export default function IssueDetail() {
   const { number } = useParams<{ number: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { currentRepo } = useAppStore();
+
+  // Pin repo to URL params so switching repos in header doesn't break this page
+  const repoOwner = searchParams.get('repo_owner') || currentRepo.owner;
+  const repoName = searchParams.get('repo_name') || currentRepo.name;
 
   const [issue, setIssue] = useState<Issue | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -84,7 +89,7 @@ export default function IssueDetail() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetchIssueDetail(issueNumber, currentRepo.owner, currentRepo.name);
+      const res = await fetchIssueDetail(issueNumber, repoOwner, repoName);
       setIssue(res.issue);
       setComments(res.comments ?? []);
       setTimeline(res.timeline ?? []);
@@ -100,7 +105,7 @@ export default function IssueDetail() {
   useEffect(() => {
     loadDetail();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [issueNumber, currentRepo.owner, currentRepo.name]);
+  }, [issueNumber, repoOwner, repoName]);
 
   return (
     <div style={{ maxWidth: 960, margin: '0 auto' }}>
@@ -219,7 +224,7 @@ export default function IssueDetail() {
                           type="link"
                           size="small"
                           style={{ padding: 0 }}
-                          onClick={() => navigate(`/issues/${rel.to_issue_number}`)}
+                          onClick={() => navigate(`/issues/${rel.to_issue_number}?repo_owner=${repoOwner}&repo_name=${repoName}`)}
                         >
                           #{rel.to_issue_number}
                         </Button>

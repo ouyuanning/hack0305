@@ -306,7 +306,7 @@ export default function KanbanBoard() {
                       <IssueCard
                         key={issue.issue_number}
                         issue={issue}
-                        onClick={() => navigate(`/issues/${issue.issue_number}`)}
+                        onClick={() => navigate(`/issues/${issue.issue_number}?repo_owner=${currentRepo.owner}&repo_name=${currentRepo.name}`)}
                       />
                     ))
                   )}

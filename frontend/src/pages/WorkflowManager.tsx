@@ -7,6 +7,7 @@ import {
   DatePicker,
   Form,
   Input,
+  Select,
   Switch,
   Tag,
   Alert,
@@ -218,6 +219,7 @@ interface WorkflowCardProps {
   triggering: boolean;
   defaultOwner: string;
   defaultName: string;
+  repos: { owner: string; name: string; display_name?: string }[];
 }
 
 function WorkflowCard({
@@ -227,24 +229,27 @@ function WorkflowCard({
   triggering,
   defaultOwner,
   defaultName,
+  repos,
 }: WorkflowCardProps) {
   const [form] = Form.useForm();
   const isActive = execution?.status === 'queued' || execution?.status === 'running';
 
-  // Pre-fill repo fields when defaults change
+  // Pre-fill repo field when defaults change
   useEffect(() => {
-    const patch: Record<string, unknown> = {};
-    if (defaultOwner) patch['repo_owner'] = defaultOwner;
-    if (defaultName) patch['repo_name'] = defaultName;
-    if (Object.keys(patch).length > 0) form.setFieldsValue(patch);
+    if (defaultOwner && defaultName) {
+      form.setFieldsValue({ repo: `${defaultOwner}/${defaultName}` });
+    }
   }, [defaultOwner, defaultName, form]);
 
   const handleSubmit = async () => {
     try {
       const raw = await form.validateFields();
-      // Convert dayjs datetime values to ISO strings for the API
-      const values: Record<string, unknown> = {};
+      // Split repo select value into owner/name
+      const repoVal = String(raw['repo'] ?? '');
+      const [repoOwner, repoName] = repoVal.includes('/') ? repoVal.split('/') : [defaultOwner, defaultName];
+      const values: Record<string, unknown> = { repo_owner: repoOwner, repo_name: repoName };
       for (const [key, val] of Object.entries(raw)) {
+        if (key === 'repo' || key === 'repo_owner' || key === 'repo_name') continue;
         if (val && typeof val === 'object' && typeof (val as { toISOString?: unknown }).toISOString === 'function') {
           values[key] = (val as { toISOString: () => string }).toISOString();
         } else {
@@ -294,13 +299,29 @@ function WorkflowCard({
             form={form}
             layout="vertical"
             initialValues={{
-              repo_owner: defaultOwner,
-              repo_name: defaultName,
+              repo: `${defaultOwner}/${defaultName}`,
             }}
             style={{ maxWidth: 560 }}
           >
-            {/* Dynamic params from WorkflowDef */}
-            {workflow.params.map((param) => (
+            {/* Repo selector — replaces repo_owner + repo_name inputs */}
+            <Form.Item
+              name="repo"
+              label="仓库"
+              rules={[{ required: true, message: '请选择仓库' }]}
+            >
+              <Select placeholder="请选择仓库">
+                {repos.map((r) => (
+                  <Select.Option key={`${r.owner}/${r.name}`} value={`${r.owner}/${r.name}`}>
+                    {r.display_name || r.name} ({r.owner}/{r.name})
+                  </Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
+
+            {/* Other dynamic params (skip repo_owner and repo_name) */}
+            {workflow.params
+              .filter((p) => p.name !== 'repo_owner' && p.name !== 'repo_name')
+              .map((param) => (
               <Form.Item
                 key={param.name}
                 name={param.name}
@@ -379,7 +400,7 @@ function WorkflowCard({
 }
 
 export default function WorkflowManager() {
-  const { currentRepo } = useAppStore();
+  const { currentRepo, repos, loadRepos } = useAppStore();
 
   const [workflows, setWorkflows] = useState<WorkflowDef[]>([]);
   const [loading, setLoading] = useState(false);
@@ -442,7 +463,8 @@ export default function WorkflowManager() {
 
   useEffect(() => {
     loadWorkflows();
-  }, [loadWorkflows]);
+    loadRepos();
+  }, [loadWorkflows, loadRepos]);
 
   const handleTrigger = useCallback(
     async (workflowId: string, values: Record<string, unknown>) => {
@@ -518,6 +540,7 @@ export default function WorkflowManager() {
             triggering={triggering[wf.id] ?? false}
             defaultOwner={currentRepo.owner}
             defaultName={currentRepo.name}
+            repos={repos}
           />
         ))}
 

@@ -120,7 +120,7 @@ export default function ReportList() {
           dataSource={reports}
           rowKey="id"
           onRow={(record) => ({
-            onClick: () => navigate(`/reports/${record.id}`),
+            onClick: () => navigate(`/reports/${record.id}?repo_owner=${currentRepo.owner}&repo_name=${currentRepo.name}`),
             style: { cursor: 'pointer' },
           })}
           locale={{

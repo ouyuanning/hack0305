@@ -25,7 +25,7 @@ import {
   ClockCircleOutlined,
   WarningOutlined,
 } from '@ant-design/icons';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
 import type { ColumnsType } from 'antd/es/table';
 import ReactECharts from 'echarts-for-react';
 import dayjs from 'dayjs';
@@ -511,7 +511,12 @@ function SharedFeaturesReport({ data }: { data: Record<string, unknown> }) {
 export default function ReportDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { currentRepo } = useAppStore();
+  const [searchParams] = useSearchParams();
+  const { currentRepo, setCurrentRepo } = useAppStore();
+
+  // Pin repo to URL params so navigating back doesn't lose context
+  const repoOwner = searchParams.get('repo_owner') || currentRepo.owner;
+  const repoName = searchParams.get('repo_name') || currentRepo.name;
 
   const [detail, setDetail] = useState<ReportDetailType | null>(null);
   const [loading, setLoading] = useState(false);
@@ -522,14 +527,14 @@ export default function ReportDetail() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetchReportDetail(id, currentRepo.owner, currentRepo.name);
+      const res = await fetchReportDetail(id, repoOwner, repoName);
       setDetail(res);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : '加载报告详情失败');
     } finally {
       setLoading(false);
     }
-  }, [id, currentRepo.owner, currentRepo.name]);
+  }, [id, repoOwner, repoName]);
 
   useEffect(() => { loadDetail(); }, [loadDetail]);
 
@@ -568,8 +573,14 @@ export default function ReportDetail() {
       <Breadcrumb
         style={{ marginBottom: 16 }}
         items={[
-          { title: <HomeOutlined />, onClick: () => navigate('/'), href: '/' },
-          { title: '分析报告', onClick: () => navigate('/reports'), href: '/reports' },
+          { title: <span style={{ cursor: 'pointer' }}><HomeOutlined /></span>, onClick: () => navigate('/') },
+          {
+            title: <span style={{ cursor: 'pointer' }}>分析报告</span>,
+            onClick: () => {
+              setCurrentRepo(repoOwner, repoName);
+              navigate('/reports');
+            },
+          },
           { title: typeLabel },
         ]}
       />

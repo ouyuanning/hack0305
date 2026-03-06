@@ -296,7 +296,7 @@ export default function IssueList() {
             pageSizeOptions: ['10', '20', '50', '100'],
           }}
           onRow={(record) => ({
-            onClick: () => navigate(`/issues/${record.issue_number}`),
+            onClick: () => navigate(`/issues/${record.issue_number}?repo_owner=${currentRepo.owner}&repo_name=${currentRepo.name}`),
             style: { cursor: 'pointer' },
           })}
           locale={{

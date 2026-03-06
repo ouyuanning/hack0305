@@ -319,7 +319,7 @@ export default function Dashboard() {
                   <List.Item
                     key={issue.issue_number}
                     style={{ cursor: 'pointer' }}
-                    onClick={() => navigate(`/issues/${issue.issue_number}`)}
+                    onClick={() => navigate(`/issues/${issue.issue_number}?repo_owner=${currentRepo.owner}&repo_name=${currentRepo.name}`)}
                   >
                     <List.Item.Meta
                       title={

@@ -158,14 +158,19 @@ function ProgressReport({ data }: { data: Record<string, unknown> }) {
           showIcon
         />
       )}
+
+      {healthScores.length === 0 && hierarchyStats.length === 0 && blockers.length === 0 && !aiSuggestions && (
+        <GenericReport data={data} />
+      )}
     </div>
   );
 }
 
 // Renders shared/risk report
 function SharedReport({ data }: { data: Record<string, unknown> }) {
-  const sharedFeatures = (data.shared_features ?? data.common_features ?? []) as Array<Record<string, unknown>>;
-  const highBugFeatures = (data.high_bug_features ?? data.bug_features ?? []) as Array<Record<string, unknown>>;
+  const sharedFeatures = (data.shared_features ?? data.features ?? data.common_features ?? []) as Array<Record<string, unknown>>;
+  const risks = data.risks as Record<string, unknown> | undefined;
+  const highBugFeatures = (data.high_bug_features ?? data.bug_features ?? risks?.shared_features ?? []) as Array<Record<string, unknown>>;
   const aiStrategic = (data.ai_strategic_suggestions ?? data.ai_suggestions ?? data.strategic_advice ?? '') as string;
 
   const featureColumns: ColumnsType<Record<string, unknown>> = [
@@ -239,6 +244,10 @@ function SharedReport({ data }: { data: Record<string, unknown> }) {
           description={<Paragraph style={{ marginBottom: 0, whiteSpace: 'pre-wrap' }}>{aiStrategic}</Paragraph>}
           showIcon
         />
+      )}
+
+      {sharedFeatures.length === 0 && highBugFeatures.length === 0 && !aiStrategic && (
+        <GenericReport data={data} />
       )}
     </div>
   );

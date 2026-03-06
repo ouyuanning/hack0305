@@ -3,7 +3,6 @@ package api
 import (
 	"encoding/json"
 	"net/http"
-	"path"
 	"sort"
 	"strings"
 
@@ -99,22 +98,28 @@ func (s *Server) handleListReports(c *gin.Context) {
 		return
 	}
 
+	// The volume uses flat filenames like "repos__matrixorigin__matrixone__reports__daily_report_...json".
+	// Strip the flat prefix so reportTypeFromFilename sees just "daily_report_...json".
+	flatPrefix := strings.ReplaceAll(prefix, "/", "__")
+
 	var items []ReportMeta
 	for _, f := range files {
-		filePath := f.GetPath()
-		filename := path.Base(filePath)
+		flatName := f.GetName()
 
 		// Only include JSON files, skip markdown and subdirectories
-		if !strings.HasSuffix(filename, ".json") {
+		if !strings.HasSuffix(flatName, ".json") {
 			continue
 		}
 
-		rType := reportTypeFromFilename(filename)
+		// Strip the flat prefix to get the short filename
+		shortName := strings.TrimPrefix(flatName, flatPrefix)
+
+		rType := reportTypeFromFilename(shortName)
 		if reportType != "" && rType != reportType {
 			continue
 		}
 
-		id := strings.TrimSuffix(filename, ".json")
+		id := strings.TrimSuffix(shortName, ".json")
 
 		// Download file to extract generated_at and repo
 		data, err := s.Store.Download(c.Request.Context(), f.GetId())
@@ -130,7 +135,7 @@ func (s *Server) handleListReports(c *gin.Context) {
 			Type:        rType,
 			Repo:        repo,
 			GeneratedAt: generatedAt,
-			Filename:    filename,
+			Filename:    shortName,
 		})
 	}
 
@@ -169,8 +174,9 @@ func (s *Server) handleGetReport(c *gin.Context) {
 
 	filename := id + ".json"
 	prefix := s.Store.PathForRepo(repoOwner, repoName) + "/reports/"
+	flatPrefix := strings.ReplaceAll(prefix, "/", "__")
 
-	// Find the file by listing and matching filename
+	// Find the file by listing and matching the short filename
 	files, err := s.Store.ListByPrefix(c.Request.Context(), prefix)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{
@@ -183,7 +189,9 @@ func (s *Server) handleGetReport(c *gin.Context) {
 
 	var fileID string
 	for _, f := range files {
-		if path.Base(f.GetPath()) == filename {
+		fn := f.GetName()
+		shortName := strings.TrimPrefix(fn, flatPrefix)
+		if shortName == filename {
 			fileID = f.GetId()
 			break
 		}
@@ -208,7 +216,7 @@ func (s *Server) handleGetReport(c *gin.Context) {
 		return
 	}
 
-	// Return the raw JSON content
+	// Parse the raw JSON content
 	var content any
 	if err := json.Unmarshal(data, &content); err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{
@@ -219,5 +227,19 @@ func (s *Server) handleGetReport(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, content)
+	// Build metadata
+	rType := reportTypeFromFilename(filename)
+	generatedAt := generatedAtFromJSON(data)
+	repo := repoFromReportJSON(data, repoOwner, repoName)
+
+	c.JSON(http.StatusOK, ReportDetailResponse{
+		Metadata: ReportMeta{
+			ID:          id,
+			Type:        rType,
+			Repo:        repo,
+			GeneratedAt: generatedAt,
+			Filename:    filename,
+		},
+		Data: content,
+	})
 }

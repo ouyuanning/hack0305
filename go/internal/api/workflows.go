@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -323,6 +324,10 @@ func (s *Server) executeWorkflow(execID, wfID string, req TriggerWorkflowRequest
 		result, err = s.runWF001(ctx, req)
 	case "WF-002":
 		result, err = s.runWF002(ctx, req)
+	case "WF-003":
+		result, err = s.runWF003(ctx, req)
+	case "WF-004":
+		err = fmt.Errorf("WF-004 需要先通过 WF-003 生成草稿，请使用「创建 Issue」页面操作")
 	case "WF-005":
 		result, err = s.runWF005(ctx, req)
 	case "WF-006":
@@ -365,21 +370,51 @@ func (s *Server) runWF001(ctx context.Context, req TriggerWorkflowRequest) (map[
 	if err != nil {
 		return nil, fmt.Errorf("collect: %w", err)
 	}
+
+	// Extract issue count from collect output for summary
+	var collectOut struct {
+		Issues []json.RawMessage `json:"issues"`
+	}
+	_ = json.Unmarshal([]byte(msg.Data), &collectOut)
+	issueCount := len(collectOut.Issues)
+
 	msg, err = s.WorkflowEnv.HandleParse(ctx, msg)
 	if err != nil {
 		return nil, fmt.Errorf("parse: %w", err)
 	}
+
+	// Extract parse stats
+	var parseOut struct {
+		Snapshots []json.RawMessage `json:"snapshots"`
+		Comments  []json.RawMessage `json:"comments"`
+		AIParse   []json.RawMessage `json:"ai_parse"`
+	}
+	_ = json.Unmarshal([]byte(msg.Data), &parseOut)
+
 	msg, err = s.WorkflowEnv.HandleRelations(ctx, msg)
 	if err != nil {
 		return nil, fmt.Errorf("relations: %w", err)
 	}
+
+	// Extract relations count
+	var relOut struct {
+		Relations []json.RawMessage `json:"relations"`
+	}
+	_ = json.Unmarshal([]byte(msg.Data), &relOut)
+
 	msg, err = s.WorkflowEnv.HandleStore(ctx, msg)
 	if err != nil {
 		return nil, fmt.Errorf("store: %w", err)
 	}
-	var out map[string]any
-	_ = json.Unmarshal([]byte(msg.Data), &out)
-	return out, nil
+
+	return map[string]any{
+		"workflow_type":  "WF-001",
+		"issue_count":    issueCount,
+		"comment_count":  len(parseOut.Comments),
+		"ai_parsed":      len(parseOut.AIParse),
+		"relation_count": len(relOut.Relations),
+		"repo":           req.RepoOwner + "/" + req.RepoName,
+	}, nil
 }
 
 // runWF002 runs: knowledge.build
@@ -393,7 +428,55 @@ func (s *Server) runWF002(ctx context.Context, req TriggerWorkflowRequest) (map[
 	if err != nil {
 		return nil, err
 	}
-	return map[string]any{"message": "knowledge base updated", "size": len(msg.Data)}, nil
+	// Count approximate sections in the generated knowledge base markdown
+	sectionCount := 0
+	for _, line := range splitLines(msg.Data) {
+		if len(line) > 0 && line[0] == '#' {
+			sectionCount++
+		}
+	}
+	return map[string]any{
+		"workflow_type":  "WF-002",
+		"content_length": len(msg.Data),
+		"section_count":  sectionCount,
+		"repo":           req.RepoOwner + "/" + req.RepoName,
+	}, nil
+}
+
+// runWF003 runs: draft.generate (auto-generate issue draft from existing data)
+func (s *Server) runWF003(ctx context.Context, req TriggerWorkflowRequest) (map[string]any, error) {
+	in := map[string]any{
+		"repo_owner":        req.RepoOwner,
+		"repo_name":         req.RepoName,
+		"user_input":        "根据现有 Issue 数据，自动发现并生成新的 Issue 草稿",
+		"browser_issue_url": "",
+	}
+	msg, err := msgFrom(in)
+	if err != nil {
+		return nil, err
+	}
+	msg, err = s.WorkflowEnv.HandleDraft(ctx, msg)
+	if err != nil {
+		return nil, err
+	}
+	var draft struct {
+		Title        string   `json:"title"`
+		Body         string   `json:"body"`
+		Labels       []string `json:"labels"`
+		Assignees    []string `json:"assignees"`
+		TemplateType string   `json:"template_type"`
+	}
+	_ = json.Unmarshal([]byte(msg.Data), &draft)
+	return map[string]any{
+		"workflow_type":   "WF-003",
+		"draft_title":     draft.Title,
+		"draft_body":      draft.Body,
+		"draft_labels":    draft.Labels,
+		"draft_assignees": draft.Assignees,
+		"label_count":     len(draft.Labels),
+		"template_type":   draft.TemplateType,
+		"repo":            req.RepoOwner + "/" + req.RepoName,
+	}, nil
 }
 
 // runWF005 runs: cleanup
@@ -403,10 +486,26 @@ func (s *Server) runWF005(ctx context.Context, req TriggerWorkflowRequest) (map[
 	if err != nil {
 		return nil, err
 	}
+
+	// Load snapshots before cleanup to count how many need AI enrichment
+	issues, _ := s.Analyzer.LoadLatestSnapshots(ctx, req.RepoOwner, req.RepoName)
+	totalCount := len(issues)
+	needCleanup := 0
+	for _, it := range issues {
+		if it.AISummary == "" {
+			needCleanup++
+		}
+	}
+
 	if _, err = s.WorkflowEnv.HandleCleanup(ctx, msg); err != nil {
 		return nil, err
 	}
-	return map[string]any{"message": "cleanup completed"}, nil
+	return map[string]any{
+		"workflow_type": "WF-005",
+		"total_issues":  totalCount,
+		"cleaned_count": needCleanup,
+		"repo":          req.RepoOwner + "/" + req.RepoName,
+	}, nil
 }
 
 // runWF006 runs: state.track
@@ -416,10 +515,24 @@ func (s *Server) runWF006(ctx context.Context, req TriggerWorkflowRequest) (map[
 	if err != nil {
 		return nil, err
 	}
+
+	// Load snapshots to count tracked issues
+	issues, _ := s.Analyzer.LoadLatestSnapshots(ctx, req.RepoOwner, req.RepoName)
+	statusCounts := map[string]int{}
+	for _, it := range issues {
+		statusCounts[it.State]++
+	}
+
 	if _, err = s.WorkflowEnv.HandleStateTrack(ctx, msg); err != nil {
 		return nil, err
 	}
-	return map[string]any{"message": "state tracking completed"}, nil
+	return map[string]any{
+		"workflow_type": "WF-006",
+		"tracked_count": len(issues),
+		"open_count":    statusCounts["open"],
+		"closed_count":  statusCounts["closed"],
+		"repo":          req.RepoOwner + "/" + req.RepoName,
+	}, nil
 }
 
 // runWF007 runs: report.generate
@@ -432,5 +545,16 @@ func (s *Server) runWF007(ctx context.Context, req TriggerWorkflowRequest) (map[
 	if _, err = s.WorkflowEnv.HandleReport(ctx, msg); err != nil {
 		return nil, err
 	}
-	return map[string]any{"message": "report generated"}, nil
+	reportTypes := []string{"daily", "progress", "extensible", "comprehensive", "shared_features", "risk_analysis"}
+	return map[string]any{
+		"workflow_type": "WF-007",
+		"report_count":  len(reportTypes),
+		"report_types":  reportTypes,
+		"repo":          req.RepoOwner + "/" + req.RepoName,
+	}, nil
+}
+
+// splitLines splits a string by newline characters.
+func splitLines(s string) []string {
+	return strings.Split(s, "\n")
 }

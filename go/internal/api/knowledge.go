@@ -2,7 +2,6 @@ package api
 
 import (
 	"net/http"
-	"path"
 	"regexp"
 	"sort"
 	"strings"
@@ -67,7 +66,7 @@ func (s *Server) handleGetKnowledge(c *gin.Context) {
 	}
 	var entries []kbEntry
 	for _, f := range files {
-		filename := path.Base(f.GetPath())
+		filename := f.GetName()
 		if !strings.HasSuffix(filename, ".md") {
 			continue
 		}
@@ -85,7 +84,7 @@ func (s *Server) handleGetKnowledge(c *gin.Context) {
 	// If no dated files found, fall back to the _latest.md file.
 	if len(entries) == 0 {
 		for _, f := range files {
-			filename := path.Base(f.GetPath())
+			filename := f.GetName()
 			if strings.HasSuffix(filename, "_latest.md") {
 				data, err := s.Store.Download(c.Request.Context(), f.GetId())
 				if err != nil {

@@ -71,6 +71,12 @@ type ReportListResponse struct {
 	Items []ReportMeta `json:"items"`
 }
 
+// ReportDetailResponse wraps report metadata and raw JSON data for the detail endpoint.
+type ReportDetailResponse struct {
+	Metadata ReportMeta `json:"metadata"`
+	Data     any        `json:"data"`
+}
+
 // GenerateIssueRequest is the payload for AI issue generation.
 type GenerateIssueRequest struct {
 	UserInput string   `json:"user_input" binding:"required"`

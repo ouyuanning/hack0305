@@ -36,6 +36,9 @@ config.json
 # === Logs ===
 src/logs/
 *.log
+.pids/
+.logs/
+/data/
 
 # === Data & Reports ===
 src/data/github_issues.db

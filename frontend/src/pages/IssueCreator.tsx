@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   Steps,
   Card,
@@ -22,6 +22,7 @@ import {
   DeleteOutlined,
 } from '@ant-design/icons';
 import type { UploadFile, UploadProps } from 'antd';
+import { useLocation } from 'react-router-dom';
 import { generateIssue, createIssue } from '@/api/issues';
 import { useAppStore } from '@/stores/appStore';
 import type { IssueDraft } from '@/types';
@@ -67,6 +68,7 @@ const COMMON_ASSIGNEES = [
 
 export default function IssueCreator() {
   const { currentRepo } = useAppStore();
+  const location = useLocation();
 
   // Step 0: input
   const [currentStep, setCurrentStep] = useState(0);
@@ -83,6 +85,27 @@ export default function IssueCreator() {
   const [editBody, setEditBody] = useState('');
   const [editLabels, setEditLabels] = useState<string[]>([]);
   const [editAssignees, setEditAssignees] = useState<string[]>([]);
+
+  // Step 2: creating
+  const [createLoading, setCreateLoading] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [createdIssue, setCreatedIssue] = useState<{ issue_number: number; html_url: string } | null>(null);
+
+  // Accept draft from navigation state (e.g. from WF-003 result)
+  useEffect(() => {
+    const state = location.state as { draft?: Partial<IssueDraft> } | null;
+    if (state?.draft) {
+      const d = state.draft;
+      setDraft(d as IssueDraft);
+      setEditTitle(d.title ?? '');
+      setEditBody(d.body ?? '');
+      setEditLabels(d.labels ?? []);
+      setEditAssignees(d.assignees ?? []);
+      setCurrentStep(1);
+      // Clear the state so refreshing doesn't re-apply
+      window.history.replaceState({}, '');
+    }
+  }, [location.state]);
 
   // Step 2: creating
   const [createLoading, setCreateLoading] = useState(false);

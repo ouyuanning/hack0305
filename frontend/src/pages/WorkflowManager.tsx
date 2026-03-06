@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Card,
   Badge,
@@ -9,15 +10,26 @@ import {
   Switch,
   Tag,
   Alert,
-  Descriptions,
   Spin,
   Typography,
   Space,
   Row,
   Col,
   Collapse,
+  Statistic,
 } from 'antd';
-import { PlayCircleOutlined, ReloadOutlined } from '@ant-design/icons';
+import {
+  PlayCircleOutlined,
+  ReloadOutlined,
+  CheckCircleOutlined,
+  DatabaseOutlined,
+  FileTextOutlined,
+  BookOutlined,
+  EditOutlined,
+  ClearOutlined,
+  SyncOutlined,
+  BarChartOutlined,
+} from '@ant-design/icons';
 import { fetchWorkflows, triggerWorkflow, fetchWorkflowStatus } from '@/api/workflows';
 import { useAppStore } from '@/stores/appStore';
 import type { WorkflowDef, WorkflowExecution } from '@/types';
@@ -34,6 +46,170 @@ const STATUS_TAG: Record<WorkflowExecution['status'], { color: string; label: st
   completed: { color: 'success', label: '已完成' },
   failed: { color: 'error', label: '失败' },
 };
+
+// ---------- Workflow-specific result summaries ----------
+
+function WorkflowResultSummary({ workflowType, result }: { workflowType?: string; result: Record<string, unknown> }) {
+  const navigate = useNavigate();
+  const repo = result['repo'] as string | undefined;
+  const boxStyle: React.CSSProperties = {
+    marginTop: 12,
+    padding: '16px 20px',
+    background: '#f6ffed',
+    border: '1px solid #b7eb8f',
+    borderRadius: 8,
+  };
+
+  switch (workflowType) {
+    case 'WF-001': {
+      const issueCount = Number(result['issue_count'] ?? 0);
+      const commentCount = Number(result['comment_count'] ?? 0);
+      const aiParsed = Number(result['ai_parsed'] ?? 0);
+      const relationCount = Number(result['relation_count'] ?? 0);
+      return (
+        <div style={boxStyle}>
+          <Space align="center" style={{ marginBottom: 12 }}>
+            <CheckCircleOutlined style={{ color: '#52c41a', fontSize: 18 }} />
+            <Text strong>Issue 数据采集完成</Text>
+            {repo && <Tag>{repo}</Tag>}
+          </Space>
+          <Row gutter={24}>
+            <Col><Statistic title="采集 Issue" value={issueCount} prefix={<DatabaseOutlined />} /></Col>
+            <Col><Statistic title="评论" value={commentCount} /></Col>
+            <Col><Statistic title="AI 解析" value={aiParsed} /></Col>
+            <Col><Statistic title="关联关系" value={relationCount} /></Col>
+          </Row>
+        </div>
+      );
+    }
+    case 'WF-002': {
+      const sectionCount = Number(result['section_count'] ?? 0);
+      const contentLen = Number(result['content_length'] ?? 0);
+      const sizeKB = (contentLen / 1024).toFixed(1);
+      return (
+        <div style={boxStyle}>
+          <Space align="center" style={{ marginBottom: 12 }}>
+            <CheckCircleOutlined style={{ color: '#52c41a', fontSize: 18 }} />
+            <Text strong>知识库生成完成</Text>
+            {repo && <Tag>{repo}</Tag>}
+          </Space>
+          <Row gutter={24}>
+            <Col><Statistic title="知识章节" value={sectionCount} prefix={<BookOutlined />} /></Col>
+            <Col><Statistic title="内容大小" value={sizeKB} suffix="KB" prefix={<FileTextOutlined />} /></Col>
+          </Row>
+        </div>
+      );
+    }
+    case 'WF-003': {
+      const draftTitle = result['draft_title'] as string || '(无标题)';
+      const labelCount = Number(result['label_count'] ?? 0);
+      const templateType = result['template_type'] as string || '';
+      const handleViewDraft = () => {
+        navigate('/create-issue', {
+          state: {
+            draft: {
+              title: result['draft_title'] ?? '',
+              body: result['draft_body'] ?? '',
+              labels: result['draft_labels'] ?? [],
+              assignees: result['draft_assignees'] ?? [],
+              template_type: result['template_type'] ?? '',
+            },
+          },
+        });
+      };
+      return (
+        <div style={boxStyle}>
+          <Space align="center" style={{ marginBottom: 12 }}>
+            <CheckCircleOutlined style={{ color: '#52c41a', fontSize: 18 }} />
+            <Text strong>Issue 草稿已生成</Text>
+            {repo && <Tag>{repo}</Tag>}
+          </Space>
+          <div style={{ marginTop: 8 }}>
+            <Space direction="vertical" size={4}>
+              <Text><EditOutlined style={{ marginRight: 6 }} />草稿标题：<Text strong>{draftTitle}</Text></Text>
+              {templateType && <Text>模板类型：<Tag color="blue">{templateType}</Tag></Text>}
+              <Text>标签数量：{labelCount}</Text>
+            </Space>
+          </div>
+          <div style={{ marginTop: 16 }}>
+            <Button type="primary" icon={<EditOutlined />} onClick={handleViewDraft}>
+              查看并编辑草稿
+            </Button>
+          </div>
+        </div>
+      );
+    }
+    case 'WF-005': {
+      const totalIssues = Number(result['total_issues'] ?? 0);
+      const cleanedCount = Number(result['cleaned_count'] ?? 0);
+      return (
+        <div style={boxStyle}>
+          <Space align="center" style={{ marginBottom: 12 }}>
+            <CheckCircleOutlined style={{ color: '#52c41a', fontSize: 18 }} />
+            <Text strong>历史数据清洗完成</Text>
+            {repo && <Tag>{repo}</Tag>}
+          </Space>
+          <Row gutter={24}>
+            <Col><Statistic title="Issue 总数" value={totalIssues} prefix={<DatabaseOutlined />} /></Col>
+            <Col><Statistic title="本次补全" value={cleanedCount} prefix={<ClearOutlined />} /></Col>
+          </Row>
+        </div>
+      );
+    }
+    case 'WF-006': {
+      const trackedCount = Number(result['tracked_count'] ?? 0);
+      const openCount = Number(result['open_count'] ?? 0);
+      const closedCount = Number(result['closed_count'] ?? 0);
+      return (
+        <div style={boxStyle}>
+          <Space align="center" style={{ marginBottom: 12 }}>
+            <CheckCircleOutlined style={{ color: '#52c41a', fontSize: 18 }} />
+            <Text strong>状态记录完成</Text>
+            {repo && <Tag>{repo}</Tag>}
+          </Space>
+          <Row gutter={24}>
+            <Col><Statistic title="跟踪 Issue" value={trackedCount} prefix={<SyncOutlined />} /></Col>
+            <Col><Statistic title="Open" value={openCount} valueStyle={{ color: '#52c41a' }} /></Col>
+            <Col><Statistic title="Closed" value={closedCount} valueStyle={{ color: '#8c8c8c' }} /></Col>
+          </Row>
+        </div>
+      );
+    }
+    case 'WF-007': {
+      const reportCount = Number(result['report_count'] ?? 0);
+      const reportTypes = (result['report_types'] as string[]) ?? [];
+      return (
+        <div style={boxStyle}>
+          <Space align="center" style={{ marginBottom: 12 }}>
+            <CheckCircleOutlined style={{ color: '#52c41a', fontSize: 18 }} />
+            <Text strong>分析报告生成完成</Text>
+            {repo && <Tag>{repo}</Tag>}
+          </Space>
+          <Row gutter={24}>
+            <Col><Statistic title="报告数量" value={reportCount} prefix={<BarChartOutlined />} /></Col>
+          </Row>
+          {reportTypes.length > 0 && (
+            <div style={{ marginTop: 8 }}>
+              {reportTypes.map((t) => <Tag key={t} color="geekblue" style={{ marginBottom: 4 }}>{t}</Tag>)}
+            </div>
+          )}
+        </div>
+      );
+    }
+    default:
+      // Fallback for unknown workflow types
+      return (
+        <Alert
+          type="success"
+          message="工作流执行完成"
+          showIcon
+          style={{ marginTop: 12 }}
+        />
+      );
+  }
+}
+
+// ---------- WorkflowCard ----------
 
 interface WorkflowCardProps {
   workflow: WorkflowDef;
@@ -84,9 +260,8 @@ function WorkflowCard({
   const statusInfo = execution ? STATUS_TAG[execution.status] : null;
 
   // Build result entries for Descriptions
-  const resultEntries = execution?.result
-    ? Object.entries(execution.result)
-    : [];
+  const result = execution?.result ?? {};
+  const workflowType = result['workflow_type'] as string | undefined;
 
   return (
     <Card
@@ -180,30 +355,9 @@ function WorkflowCard({
                 </Spin>
               )}
 
-              {/* Completed: show result summary */}
-              {execution.status === 'completed' && resultEntries.length > 0 && (
-                <Descriptions
-                  title="执行结果"
-                  bordered
-                  size="small"
-                  column={1}
-                  style={{ marginTop: 12 }}
-                >
-                  {resultEntries.map(([key, value]) => (
-                    <Descriptions.Item key={key} label={key}>
-                      {String(value)}
-                    </Descriptions.Item>
-                  ))}
-                </Descriptions>
-              )}
-
-              {execution.status === 'completed' && resultEntries.length === 0 && (
-                <Alert
-                  type="success"
-                  message="工作流执行完成"
-                  showIcon
-                  style={{ marginTop: 12 }}
-                />
+              {/* Completed: show friendly result summary */}
+              {execution.status === 'completed' && (
+                <WorkflowResultSummary workflowType={workflowType} result={result} />
               )}
 
               {/* Failed: show error */}

@@ -1008,3 +1008,13 @@ func (e *Env) HandleStateTrack(ctx context.Context, msg *mowl.MowlMessage) (*mow
 func (e *Env) HandleReport(ctx context.Context, msg *mowl.MowlMessage) (*mowl.MowlMessage, error) {
 	return e.handleReport(ctx, nil, msg)
 }
+
+// HandleDraft is the public wrapper for handleDraft.
+func (e *Env) HandleDraft(ctx context.Context, msg *mowl.MowlMessage) (*mowl.MowlMessage, error) {
+	return e.handleDraft(ctx, nil, msg)
+}
+
+// HandleCreateIssue is the public wrapper for handleCreateIssue.
+func (e *Env) HandleCreateIssue(ctx context.Context, msg *mowl.MowlMessage) (*mowl.MowlMessage, error) {
+	return e.handleCreateIssue(ctx, nil, msg)
+}

@@ -1,7 +1,7 @@
 moi:
   base_url: "http://localhost:8081"
   api_key: "${MOI_API_KEY}"
-  workspace_id: "a0cd2058-82ff-d0a1-22e7-9c18a88946b7"
+  workspace_id: "927a9af9-884e-32d7-b21a-0e3935d3ed0c"
   database_id: 1
   volume_name: "issue-data"
 
